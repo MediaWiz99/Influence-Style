@@ -889,9 +889,20 @@
         let studentName = '';
         let surveyDate = '';
 
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('testDate').value = new Date().toISOString().split('T')[0];
-        });
+        // Robust auto-date initialization with multiple fallbacks
+        function setTodayDate() {
+            var dateField = document.getElementById('testDate');
+            if (dateField && !dateField.value) {
+                dateField.value = new Date().toISOString().split('T')[0];
+            }
+        }
+        setTodayDate();
+        document.addEventListener('DOMContentLoaded', setTodayDate);
+        window.addEventListener('load', setTodayDate);
+        requestAnimationFrame(setTodayDate);
+        setTimeout(setTodayDate, 0);
+        setTimeout(setTodayDate, 100);
+        setTimeout(setTodayDate, 500);
 
         function startAssessment() {
             studentName = document.getElementById('studentName').value.trim();
@@ -1241,136 +1252,334 @@
         }
 
         function generatePDF() {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            const { scores, primaryStyle, secondaryStyle, pushScore, pullScore } = window.influenceResults;
-            const primary = styleData[primaryStyle];
-            const secondary = styleData[secondaryStyle];
-            const maxScore = 40;
+            var jsPDF = window.jspdf.jsPDF;
+            var doc = new jsPDF();
+            var scores = window.influenceResults.scores;
+            var primaryStyle = window.influenceResults.primaryStyle;
+            var secondaryStyle = window.influenceResults.secondaryStyle;
+            var pushScore = window.influenceResults.pushScore;
+            var pullScore = window.influenceResults.pullScore;
+            var primary = styleData[primaryStyle];
+            var secondary = styleData[secondaryStyle];
+            var maxScore = 40;
 
-            const chapmanBlue = [0, 32, 91];
-            const chapmanGold = [196, 160, 0];
-            const textDark = [26, 26, 46];
-            const textMuted = [100, 100, 110];
+            // Colors
+            var chapmanBlue = [0, 32, 91];
+            var chapmanGold = [196, 160, 0];
+            var textDark = [26, 26, 46];
+            var textMuted = [100, 100, 110];
+            var greenColor = [46, 125, 50];
+            var redColor = [198, 40, 40];
+            var blueColor = [21, 101, 192];
+            var orangeColor = [230, 81, 0];
+            var purpleColor = [123, 31, 162];
 
-            // Header
-            doc.setFillColor(...chapmanBlue);
-            doc.rect(0, 0, 210, 45, 'F');
+            // Tracker code generation
+            var styleAbbrev = { rationalizing: 'Ra', asserting: 'As', negotiating: 'Ne', inspiring: 'In', bridging: 'Br' };
+            var trackerCode = 'ISA-' + styleAbbrev[primaryStyle] + styleAbbrev[secondaryStyle] + '-' + scores[primaryStyle];
+
+            // Helper function
+            function addWrappedText(text, x, startY, maxWidth, lineHeight) {
+                var lines = doc.splitTextToSize(text, maxWidth);
+                var currentY = startY;
+                for (var i = 0; i < lines.length; i++) {
+                    if (currentY > 275) { doc.addPage(); currentY = 20; }
+                    doc.text(lines[i], x, currentY);
+                    currentY += lineHeight;
+                }
+                return currentY;
+            }
+
+            // ===== PAGE 1 =====
+            doc.setFillColor(chapmanBlue[0], chapmanBlue[1], chapmanBlue[2]);
+            doc.rect(0, 0, 210, 42, 'F');
             doc.setFontSize(10);
             doc.setTextColor(255, 255, 255);
             doc.text('CHAPMAN UNIVERSITY', 105, 12, { align: 'center' });
             doc.setFontSize(9);
-            doc.setTextColor(...chapmanGold);
+            doc.setTextColor(chapmanGold[0], chapmanGold[1], chapmanGold[2]);
             doc.text('Argyros College of Business and Economics', 105, 18, { align: 'center' });
-            doc.setFontSize(18);
+            doc.setFontSize(15);
             doc.setTextColor(255, 255, 255);
-            doc.text('Influence Style Assessment', 105, 30, { align: 'center' });
-            doc.setFontSize(10);
-            doc.text("Based on Cohen & Bradford's Influence Framework", 105, 38, { align: 'center' });
-            doc.setFillColor(...chapmanGold);
-            doc.rect(0, 45, 210, 2, 'F');
+            doc.text('Influence Style Assessment', 105, 28, { align: 'center' });
+            doc.setFontSize(9);
+            doc.text("Based on Cohen & Bradford's Influence Framework", 105, 36, { align: 'center' });
+            doc.setFillColor(chapmanGold[0], chapmanGold[1], chapmanGold[2]);
+            doc.rect(0, 42, 210, 2, 'F');
 
-            let y = 55;
-            doc.setFontSize(11);
-            doc.setTextColor(...textDark);
-            doc.text(`Student: ${studentName}`, 20, y);
-            doc.text(`Date: ${new Date(surveyDate).toLocaleDateString()}`, 120, y);
+            var y = 52;
+            doc.setFontSize(10);
+            doc.setTextColor(textDark[0], textDark[1], textDark[2]);
+            doc.text('Student: ' + studentName, 20, y);
+            doc.text('Date: ' + new Date(surveyDate).toLocaleDateString(), 140, y);
             y += 10;
 
-            // Scores
-            doc.setFontSize(9);
-            doc.setTextColor(...textMuted);
-            doc.text(`Push Styles: ${pushScore}/80 | Pull Styles: ${pullScore}/120`, 20, y);
-            y += 12;
-
-            // Primary Style
-            doc.setFillColor(...chapmanBlue);
-            doc.roundedRect(20, y, 170, 15, 3, 3, 'F');
-            doc.setFontSize(12);
+            // Primary Style Banner
+            doc.setFillColor(chapmanBlue[0], chapmanBlue[1], chapmanBlue[2]);
+            doc.roundedRect(20, y, 170, 18, 2, 2, 'F');
+            doc.setFontSize(14);
             doc.setTextColor(255, 255, 255);
-            doc.text(`PRIMARY: ${primary.name.toUpperCase()} ${primary.icon}`, 105, y + 10, { align: 'center' });
-            y += 22;
+            doc.text('PRIMARY STYLE: ' + primary.name.toUpperCase(), 105, y + 12, { align: 'center' });
+            y += 24;
 
             doc.setFontSize(10);
-            doc.setTextColor(...chapmanGold);
-            doc.text(`${primary.subtitle}`, 105, y, { align: 'center' });
+            doc.setTextColor(chapmanGold[0], chapmanGold[1], chapmanGold[2]);
+            doc.text(primary.subtitle + ' (' + primary.category + ' Style)', 105, y, { align: 'center' });
+            y += 6;
+
+            doc.setFontSize(9);
+            doc.setTextColor(textMuted[0], textMuted[1], textMuted[2]);
+            doc.text('Secondary: ' + secondary.name + ' (' + secondary.category + ')', 105, y, { align: 'center' });
             y += 8;
-            doc.setTextColor(...textMuted);
-            doc.text(`Secondary: ${secondary.name}`, 105, y, { align: 'center' });
-            y += 12;
 
-            // All Scores
-            doc.setFontSize(9);
-            doc.setTextColor(...textDark);
-            const scoreText = Object.entries(scores).map(([s, v]) => `${styleData[s].name}: ${v}`).join(' | ');
-            doc.text(scoreText, 20, y);
-            y += 10;
+            // Score Box
+            doc.setFillColor(245, 247, 250);
+            doc.roundedRect(20, y, 170, 22, 2, 2, 'F');
+            doc.setFontSize(8);
+            doc.setTextColor(chapmanBlue[0], chapmanBlue[1], chapmanBlue[2]);
+            doc.text('STYLE SCORES (8 questions each, max 40)', 25, y + 6);
+            doc.setFontSize(8);
+            doc.setTextColor(textDark[0], textDark[1], textDark[2]);
+            doc.text('Rationalizing: ' + scores.rationalizing, 25, y + 12);
+            doc.text('Asserting: ' + scores.asserting, 70, y + 12);
+            doc.text('Negotiating: ' + scores.negotiating, 110, y + 12);
+            doc.text('Inspiring: ' + scores.inspiring, 150, y + 12);
+            doc.text('Bridging: ' + scores.bridging, 25, y + 18);
+            doc.text('PUSH Total: ' + pushScore + '/80', 80, y + 18);
+            doc.text('PULL Total: ' + pullScore + '/120', 140, y + 18);
+            y += 28;
+
+            // Tracker Code Box
+            doc.setFillColor(chapmanBlue[0], chapmanBlue[1], chapmanBlue[2]);
+            doc.roundedRect(20, y, 170, 10, 2, 2, 'F');
+            doc.setFontSize(8);
+            doc.setTextColor(255, 255, 255);
+            doc.text('Tracker: ' + trackerCode + '  |  Primary: ' + primary.name + '  |  Secondary: ' + secondary.name, 105, y + 7, { align: 'center' });
+            y += 16;
 
             // Description
-            const descLines = doc.splitTextToSize(primary.description, 170);
-            descLines.forEach(line => { doc.text(line, 20, y); y += 5; });
-            y += 8;
+            doc.setFontSize(8);
+            doc.setTextColor(textDark[0], textDark[1], textDark[2]);
+            y = addWrappedText(primary.description, 20, y, 170, 4);
+            y += 5;
 
             // Strengths
-            doc.setFontSize(11);
-            doc.setTextColor(...chapmanBlue);
-            doc.text('Strengths', 20, y);
-            y += 7;
-            doc.setFontSize(9);
-            doc.setTextColor(...textDark);
-            primary.strengths.slice(0, 4).forEach(s => {
-                if (y > 270) { doc.addPage(); y = 20; }
-                doc.text(`• ${s}`, 25, y); y += 5;
-            });
-            y += 8;
+            doc.setFontSize(10);
+            doc.setTextColor(greenColor[0], greenColor[1], greenColor[2]);
+            doc.text('STRENGTHS', 20, y);
+            y += 5;
+            doc.setFontSize(8);
+            doc.setTextColor(textDark[0], textDark[1], textDark[2]);
+            for (var i = 0; i < Math.min(4, primary.strengths.length); i++) {
+                doc.text('- ' + primary.strengths[i], 25, y);
+                y += 4;
+            }
+            y += 3;
+
+            // Challenges
+            doc.setFontSize(10);
+            doc.setTextColor(orangeColor[0], orangeColor[1], orangeColor[2]);
+            doc.text('WATCH OUT FOR', 20, y);
+            y += 5;
+            doc.setFontSize(8);
+            doc.setTextColor(textDark[0], textDark[1], textDark[2]);
+            for (var i = 0; i < Math.min(4, primary.challenges.length); i++) {
+                doc.text('- ' + primary.challenges[i], 25, y);
+                y += 4;
+            }
+            y += 3;
 
             // When to Use
-            if (y > 220) { doc.addPage(); y = 20; }
-            doc.setFontSize(11);
-            doc.setTextColor(...chapmanBlue);
-            doc.text('When to Use', 20, y);
-            y += 7;
-            doc.setFontSize(9);
-            doc.setTextColor(...textDark);
-            const whenLines = doc.splitTextToSize(primary.whenToUse, 170);
-            whenLines.forEach(line => { doc.text(line, 20, y); y += 5; });
-            y += 10;
+            doc.setFontSize(10);
+            doc.setTextColor(blueColor[0], blueColor[1], blueColor[2]);
+            doc.text('WHEN TO USE', 20, y);
+            y += 5;
+            doc.setFontSize(8);
+            doc.setTextColor(textDark[0], textDark[1], textDark[2]);
+            y = addWrappedText(primary.whenToUse, 20, y, 170, 4);
+            y += 3;
 
-            // Reflection
-            if (y > 200) { doc.addPage(); y = 20; }
-            doc.setFillColor(...chapmanBlue);
+            // Tactics
+            doc.setFontSize(10);
+            doc.setTextColor(purpleColor[0], purpleColor[1], purpleColor[2]);
+            doc.text('KEY TACTICS', 20, y);
+            y += 5;
+            doc.setFontSize(8);
+            doc.setTextColor(textDark[0], textDark[1], textDark[2]);
+            for (var i = 0; i < Math.min(4, primary.tactics.length); i++) {
+                doc.text('-> ' + primary.tactics[i], 25, y);
+                y += 4;
+            }
+
+            // ===== PAGE 2: SWOT and All Styles =====
+            doc.addPage();
+            y = 20;
+
+            // SWOT Header
+            doc.setFillColor(chapmanBlue[0], chapmanBlue[1], chapmanBlue[2]);
+            doc.roundedRect(20, y, 170, 10, 2, 2, 'F');
+            doc.setFontSize(11);
+            doc.setTextColor(255, 255, 255);
+            doc.text('SWOT ANALYSIS - Influence Profile', 105, y + 7, { align: 'center' });
+            y += 18;
+
+            // SWOT Grid
+            var boxW = 82;
+            var boxH = 26;
+
+            // Strength
+            doc.setFillColor(232, 245, 233);
+            doc.roundedRect(20, y, boxW, boxH, 2, 2, 'F');
+            doc.setDrawColor(greenColor[0], greenColor[1], greenColor[2]);
+            doc.setLineWidth(0.5);
+            doc.line(20, y, 20, y + boxH);
+            doc.setFontSize(9);
+            doc.setTextColor(greenColor[0], greenColor[1], greenColor[2]);
+            doc.text('STRENGTH', 25, y + 7);
+            doc.setFontSize(7);
+            doc.setTextColor(textDark[0], textDark[1], textDark[2]);
+            var sText = 'Strong ' + primary.name.toLowerCase() + ' style provides clear influence approach';
+            var sLines = doc.splitTextToSize(sText, boxW - 10);
+            for (var i = 0; i < Math.min(sLines.length, 3); i++) {
+                doc.text(sLines[i], 25, y + 12 + (i * 4));
+            }
+
+            // Weakness
+            doc.setFillColor(255, 235, 238);
+            doc.roundedRect(108, y, boxW, boxH, 2, 2, 'F');
+            doc.setDrawColor(redColor[0], redColor[1], redColor[2]);
+            doc.line(108, y, 108, y + boxH);
+            doc.setFontSize(9);
+            doc.setTextColor(redColor[0], redColor[1], redColor[2]);
+            doc.text('WEAKNESS', 113, y + 7);
+            doc.setFontSize(7);
+            doc.setTextColor(textDark[0], textDark[1], textDark[2]);
+            var wText = primary.challenges[0];
+            var wLines = doc.splitTextToSize(wText, boxW - 10);
+            for (var i = 0; i < Math.min(wLines.length, 3); i++) {
+                doc.text(wLines[i], 113, y + 12 + (i * 4));
+            }
+
+            y += boxH + 5;
+
+            // Opportunity
+            doc.setFillColor(227, 242, 253);
+            doc.roundedRect(20, y, boxW, boxH, 2, 2, 'F');
+            doc.setDrawColor(blueColor[0], blueColor[1], blueColor[2]);
+            doc.line(20, y, 20, y + boxH);
+            doc.setFontSize(9);
+            doc.setTextColor(blueColor[0], blueColor[1], blueColor[2]);
+            doc.text('OPPORTUNITY', 25, y + 7);
+            doc.setFontSize(7);
+            doc.setTextColor(textDark[0], textDark[1], textDark[2]);
+            var oText = 'Develop ' + secondary.name.toLowerCase() + ' as complementary style for greater flexibility';
+            var oLines = doc.splitTextToSize(oText, boxW - 10);
+            for (var i = 0; i < Math.min(oLines.length, 3); i++) {
+                doc.text(oLines[i], 25, y + 12 + (i * 4));
+            }
+
+            // Threat
+            doc.setFillColor(255, 243, 224);
+            doc.roundedRect(108, y, boxW, boxH, 2, 2, 'F');
+            doc.setDrawColor(orangeColor[0], orangeColor[1], orangeColor[2]);
+            doc.line(108, y, 108, y + boxH);
+            doc.setFontSize(9);
+            doc.setTextColor(orangeColor[0], orangeColor[1], orangeColor[2]);
+            doc.text('THREAT', 113, y + 7);
+            doc.setFontSize(7);
+            doc.setTextColor(textDark[0], textDark[1], textDark[2]);
+            var tText = 'Over-reliance on one style limits effectiveness with diverse audiences';
+            var tLines = doc.splitTextToSize(tText, boxW - 10);
+            for (var i = 0; i < Math.min(tLines.length, 3); i++) {
+                doc.text(tLines[i], 113, y + 12 + (i * 4));
+            }
+
+            y += boxH + 12;
+
+            // Push vs Pull Framework
+            doc.setFillColor(245, 247, 250);
+            doc.roundedRect(20, y, 170, 20, 2, 2, 'F');
+            doc.setFontSize(9);
+            doc.setTextColor(chapmanBlue[0], chapmanBlue[1], chapmanBlue[2]);
+            doc.text('PUSH vs PULL INFLUENCE FRAMEWORK', 105, y + 6, { align: 'center' });
+            doc.setFontSize(7);
+            doc.setTextColor(textMuted[0], textMuted[1], textMuted[2]);
+            doc.text('PUSH (Rationalizing + Asserting): ' + pushScore + '/80 - Direct, logic-based influence', 105, y + 12, { align: 'center' });
+            doc.text('PULL (Negotiating + Inspiring + Bridging): ' + pullScore + '/120 - Relationship-based influence', 105, y + 17, { align: 'center' });
+            y += 26;
+
+            // All Five Styles
+            doc.setFontSize(10);
+            doc.setTextColor(chapmanBlue[0], chapmanBlue[1], chapmanBlue[2]);
+            doc.text('THE FIVE INFLUENCE STYLES', 20, y);
+            y += 7;
+
+            var styles = ['rationalizing', 'asserting', 'negotiating', 'inspiring', 'bridging'];
+            var styleColors = {
+                rationalizing: blueColor,
+                asserting: redColor,
+                negotiating: purpleColor,
+                inspiring: orangeColor,
+                bridging: greenColor
+            };
+
+            for (var s = 0; s < styles.length; s++) {
+                var style = styles[s];
+                var styleColor = styleColors[style];
+                var isYours = (style === primaryStyle);
+                
+                if (y > 255) { doc.addPage(); y = 20; }
+                
+                doc.setFontSize(8);
+                doc.setTextColor(styleColor[0], styleColor[1], styleColor[2]);
+                doc.text(styleData[style].name + (isYours ? ' (Your Primary)' : '') + ': ' + scores[style] + '/40 [' + styleData[style].category + ']', 25, y);
+                y += 4;
+                doc.setFontSize(7);
+                doc.setTextColor(textMuted[0], textMuted[1], textMuted[2]);
+                doc.text(styleData[style].subtitle, 25, y);
+                y += 5;
+            }
+
+            y += 6;
+
+            // Reflection Questions
+            doc.setFillColor(chapmanBlue[0], chapmanBlue[1], chapmanBlue[2]);
             doc.roundedRect(20, y, 170, 10, 2, 2, 'F');
             doc.setFontSize(10);
             doc.setTextColor(255, 255, 255);
             doc.text('REFLECTION QUESTIONS', 105, y + 7, { align: 'center' });
-            y += 18;
+            y += 16;
 
-            const reflectionQs = [
-                'Think of a recent influence attempt. Which style did you use? Was it effective?',
-                'Who do you find difficult to influence? What style might work better?',
-                `When has ${primary.name.toLowerCase()} backfired? What would you do differently?`,
-                'What one influence tactic will you practice this week?'
+            var reflectionQs = [
+                "Think of a recent influence attempt. Which style did you use? Was it effective?",
+                "Who do you find difficult to influence? What style might work better?",
+                "When has your primary style backfired? What would you do differently?",
+                "How can you develop your secondary style for greater flexibility?",
+                "What influence tactic will you practice this week?"
             ];
-            doc.setFontSize(9);
-            doc.setTextColor(...textDark);
-            reflectionQs.forEach((q, i) => {
-                if (y > 270) { doc.addPage(); y = 20; }
-                const lines = doc.splitTextToSize(`${i + 1}. ${q}`, 165);
-                lines.forEach(line => { doc.text(line, 25, y); y += 5; });
-                y += 4;
-            });
-
-            // Footer
-            const pageCount = doc.internal.getNumberOfPages();
-            for (let i = 1; i <= pageCount; i++) {
-                doc.setPage(i);
-                doc.setFontSize(8);
-                doc.setTextColor(...textMuted);
-                doc.text(`Page ${i} of ${pageCount}`, 105, 287, { align: 'center' });
-                doc.text('Chapman University • Argyros College of Business and Economics • MGMT 316', 105, 292, { align: 'center' });
+            doc.setFontSize(8);
+            doc.setTextColor(textDark[0], textDark[1], textDark[2]);
+            for (var i = 0; i < reflectionQs.length; i++) {
+                if (y > 275) { doc.addPage(); y = 20; }
+                var qLines = doc.splitTextToSize((i + 1) + '. ' + reflectionQs[i], 165);
+                for (var j = 0; j < qLines.length; j++) {
+                    doc.text(qLines[j], 25, y);
+                    y += 4;
+                }
+                y += 2;
             }
 
-            doc.save(`Influence_Style_Assessment_${studentName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`);
+            // Footer on all pages
+            var pageCount = doc.internal.getNumberOfPages();
+            for (var i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(textMuted[0], textMuted[1], textMuted[2]);
+                doc.text('Page ' + i + ' of ' + pageCount, 105, 287, { align: 'center' });
+                doc.text('Chapman University - Argyros College of Business and Economics - MGMT 316', 105, 292, { align: 'center' });
+            }
+
+            doc.save('Influence_Style_' + studentName.replace(/\s+/g, '_') + '_' + new Date().toISOString().split('T')[0] + '.pdf');
         }
 
         function restartAssessment() {
