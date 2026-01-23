@@ -1031,6 +1031,37 @@
                     }).join('')}
                 </div>
 
+                <!-- TRACKER SUMMARY SECTION -->
+                <div style="background: linear-gradient(135deg, #1a3a7a 0%, #00205B 100%); color: white; padding: 25px; border-radius: 14px; margin: 20px 0;">
+                    <h3 style="color: #C4A000; margin-bottom: 15px; font-size: 1.3em;">📋 Assessment Tracker Summary</h3>
+                    <p style="font-size: 0.9em; opacity: 0.9; margin-bottom: 15px;">Copy this code into your Assessment Tracker.</p>
+                    
+                    <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; margin-bottom: 15px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div>
+                                <div style="font-size: 0.8em; opacity: 0.8; text-transform: uppercase; letter-spacing: 1px;">Primary Style</div>
+                                <div style="font-size: 1.4em; font-weight: 700; color: #F5E6A3;">${primary.name}</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 0.8em; opacity: 0.8; text-transform: uppercase; letter-spacing: 1px;">Secondary Style</div>
+                                <div style="font-size: 1.4em; font-weight: 700; color: #F5E6A3;">${secondary.name}</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 0.8em; opacity: 0.8; text-transform: uppercase; letter-spacing: 1px;">Push Score</div>
+                                <div style="font-size: 1.2em; font-weight: 600;">${pushScore} / ${pushMax} (${pushPct}%)</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 0.8em; opacity: 0.8; text-transform: uppercase; letter-spacing: 1px;">Pull Score</div>
+                                <div style="font-size: 1.2em; font-weight: 600;">${pullScore} / ${pullMax} (${pullPct}%)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 15px; padding: 12px; background: rgba(196, 160, 0, 0.3); border-radius: 8px; font-family: monospace; font-size: 1.1em; text-align: center;">
+                        <span style="opacity: 0.7;">Tracker Code:</span> <strong style="color: #F5E6A3; font-size: 1.2em;">ISA-${primaryStyle === 'rationalizing' ? 'Ra' : primaryStyle === 'asserting' ? 'As' : primaryStyle === 'negotiating' ? 'Ne' : primaryStyle === 'inspiring' ? 'In' : 'Br'}${secondaryStyle === 'rationalizing' ? 'Ra' : secondaryStyle === 'asserting' ? 'As' : secondaryStyle === 'negotiating' ? 'Ne' : secondaryStyle === 'inspiring' ? 'In' : 'Br'}-${scores[primaryStyle]}</strong>
+                    </div>
+                </div>
+
                 <div class="results-body">
                     <div class="category-summary">
                         <div class="category-card">
